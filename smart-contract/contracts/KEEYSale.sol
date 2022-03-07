@@ -25,7 +25,6 @@ contract KEEYSale {
   }
 
   function buyTokens(uint256 _numberOfTokens) public payable {
-    console.log(msg.value);
     require(msg.value == multiply(_numberOfTokens, tokenPrice));
     require(tokenContract.balanceOf(address(this)) >= _numberOfTokens);
     require(tokenContract.transfer(msg.sender, _numberOfTokens));

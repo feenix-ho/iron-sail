@@ -19,7 +19,7 @@ const styles = {
   wrapper: `min-h-screen`,
 }
 
-const HARDHAT_NETWORK_ID = '31337'
+// const HARDHAT_NETWORK_ID = '31337'
 
 const ERROR_CODE_TX_REJECTED_BY_USER = 4001
 
@@ -33,10 +33,11 @@ function App() {
     tokenABI,
     _provider.getSigner(0)
   )
+
   const _tokenSale = new ethers.Contract(
     tokenSaleAddress,
     tokenSaleABI,
-    _provider.getSigner()
+    _provider.getSigner(0)
   )
 
   const initialState = {
@@ -99,7 +100,12 @@ function App() {
   }
 
   const _getTokenData = async () => {
+    console.log('Token instance: ', _token)
+    console.log('Token Sale instance: ', _tokenSale)
     const name = await _token.name()
+
+    console.log('HIHIHI: ', name)
+
     const symbol = await _token.symbol()
     const price = await _tokenSale.tokenPrice()
     const tokenSold = await _tokenSale.tokenSold()
@@ -111,7 +117,10 @@ function App() {
   }
 
   const _updateBalance = async () => {
+    // console.log(state.selectedAddress)
+    // console.log(_provider.getCode(state.selectedAddress))
     const balance = await _token.balanceOf(state.selectedAddress)
+    console.log("I'm here.")
     const USDTBalance = await _provider.getBalance(state.selectedAddress)
     setState((prevState) => ({
       ...prevState,
@@ -209,18 +218,19 @@ function App() {
     setState(initialState)
   }
 
-  const _checkNetwork = () => {
-    if (ethereum.networkVersion === HARDHAT_NETWORK_ID) {
-      return true
-    }
+  // const _checkNetwork = () => {
+  //   console.log('hithereimdead', ethereum.networkVersion)
+  //   if (ethereum.networkVersion === HARDHAT_NETWORK_ID) {
+  //     return true
+  //   }
 
-    setState((prevState) => ({
-      ...prevState,
-      networkError: 'Please connect Metamask to Localhost:8545',
-    }))
+  //   setState((prevState) => ({
+  //     ...prevState,
+  //     networkError: 'Please connect Metamask to Localhost:8545',
+  //   }))
 
-    return false
-  }
+  //   return false
+  // }
 
   const _handleChange = (e) => {
     let num = e.target.value
@@ -242,6 +252,7 @@ function App() {
     _stopPollingData()
   }, [])
   useEffect(() => {
+    console.log(state)
     if (state.selectedAddress) _startPollingData()
   }, [state.selectedAddress])
   useEffect(() => {
