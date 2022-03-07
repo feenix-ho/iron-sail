@@ -1,0 +1,77 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Git Environment\\kardiachain-training\\homework-02\\iron-sail\\smart-contract\\contracts\\KEEY.sol": {
+      "lastModificationDate": 1646464338757,
+      "contentHash": "34766744e05240ad5ed70960603227dd",
+      "sourceName": "contracts/KEEY.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "KEEY"
+      ]
+    },
+    "C:\\Git Environment\\kardiachain-training\\homework-02\\iron-sail\\smart-contract\\contracts\\KEEYSale.sol": {
+      "lastModificationDate": 1646562844755,
+      "contentHash": "b9fafbe84eeb7e7ed2f8f0795fa27158",
+      "sourceName": "contracts/KEEYSale.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./KEEY.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "KEEYSale"
+      ]
+    }
+  }
+}
