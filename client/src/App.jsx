@@ -41,13 +41,11 @@ function App() {
   )
 
   const initialState = {
-    // The info of the token (i.e. It's Name and symbol)
     tokenData: undefined,
-    // The user's address and balance
+    tokenSaleData: undefined,
     selectedAddress: undefined,
     balance: undefined,
     USDTBalance: undefined,
-    // The ID about transactions being sent, and any possible error with them
     txBeingSent: undefined,
     transactionError: undefined,
     networkError: undefined,
@@ -62,10 +60,6 @@ function App() {
     const [selectedAddress] = await ethereum.request({
       method: 'eth_requestAccounts',
     })
-
-    // if (!_checkNetwork()) {
-    //   return
-    // }
 
     _initialize(selectedAddress)
 
@@ -87,6 +81,7 @@ function App() {
   const _initialize = async (userAddress) => {
     setState((prevState) => ({ ...prevState, selectedAddress: userAddress }))
     _getTokenData()
+    _getTokenSaleData()
   }
 
   const _startPollingData = () => {
@@ -100,27 +95,27 @@ function App() {
   }
 
   const _getTokenData = async () => {
-    console.log('Token instance: ', _token)
-    console.log('Token Sale instance: ', _tokenSale)
     const name = await _token.name()
-
-    console.log('HIHIHI: ', name)
-
     const symbol = await _token.symbol()
+
+    setState((prevState) => ({
+      ...prevState,
+      tokenData: { name, symbol },
+    }))
+  }
+
+  const _getTokenSaleData = async () => {
     const price = await _tokenSale.tokenPrice()
     const tokenSold = await _tokenSale.tokenSold()
 
     setState((prevState) => ({
       ...prevState,
-      tokenData: { name, symbol, price, tokenSold },
+      tokenSaleData: { price, tokenSold },
     }))
   }
 
   const _updateBalance = async () => {
-    // console.log(state.selectedAddress)
-    // console.log(_provider.getCode(state.selectedAddress))
     const balance = await _token.balanceOf(state.selectedAddress)
-    console.log("I'm here.")
     const USDTBalance = await _provider.getBalance(state.selectedAddress)
     setState((prevState) => ({
       ...prevState,
@@ -149,10 +144,8 @@ function App() {
         return
       }
       console.error(error)
-      // setState({ transactionError: error })
       setState((prevState) => ({ ...prevState, transactionError: error }))
     } finally {
-      // setState({ txBeingSent: undefined })
       setState((prevState) => ({ ...prevState, txBeingSent: undefined }))
     }
   }
@@ -161,12 +154,10 @@ function App() {
     try {
       _dismissTransactionError()
 
-      // console.log(buyer, state.tokenData.tokenSold)
-
       let num = amount
         ? ethers.BigNumber.from(amount)
         : ethers.BigNumber.from(0)
-      num = num * state.tokenData.price
+      num = num * state.tokenSaleData.price
       num = ethers.BigNumber.from(num.toString())
 
       const tx = await _tokenSale.buyTokens(amount, {
@@ -235,9 +226,7 @@ function App() {
   const _handleChange = (e) => {
     let num = e.target.value
     num = num ? ethers.BigNumber.from(num) : ethers.BigNumber.from(0)
-    num = num * state.tokenData.price
-    // let tmp = ethers.BigNumber.from([e.target.value])
-    // tmp = tmp * state.tokenData.price
+    num = num * state.tokenSaleData.price
 
     setState((prevState) => ({
       ...prevState,
@@ -250,14 +239,13 @@ function App() {
 
   useEffect(() => {
     _stopPollingData()
+    _connectWallet()
+    // _getTokenSaleData()
+    console.log(state.balance)
   }, [])
   useEffect(() => {
-    console.log(state)
     if (state.selectedAddress) _startPollingData()
   }, [state.selectedAddress])
-  useEffect(() => {
-    _connectWallet()
-  }, [])
 
   return (
     <div className={styles.wrapper}>
@@ -269,8 +257,8 @@ function App() {
         <Welcome
           availableSupply={
             2500 -
-            (state.tokenData && state.tokenData.tokenSold
-              ? state.tokenData.tokenSold
+            (state.tokenSaleData && state.tokenSaleData.tokenSold
+              ? state.tokenSaleData.tokenSold
               : 0)
           }
           selectedAddress={state.selectedAddress}

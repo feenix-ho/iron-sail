@@ -3,5 +3,5 @@ import tokenSale from './KEEYSale.json'
 
 export const tokenABI = token.abi
 export const tokenSaleABI = tokenSale.abi
-export const tokenAddress = '0x673464a85032b9a6C9EF0072f316B9c1d80E980f'
-export const tokenSaleAddress = '0x94517F514bB77721A7FDa8b9EF69b1C99E92A008'
+export const tokenAddress = '0x2972e4D17F6d83F366375Db9C43518e22EBDb080'
+export const tokenSaleAddress = '0x673464a85032b9a6C9EF0072f316B9c1d80E980f'
