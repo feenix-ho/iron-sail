@@ -98,7 +98,6 @@ const InputForm = ({
         <FormHelperText
           style={{
             color: USDTBalance < formData.subtotal ? '#770000' : 'dimgrey',
-            // color: USDTBalance >= formData.subtotal ? 'dimgrey' : '#770000',
           }}
         >
           Balance:{' '}

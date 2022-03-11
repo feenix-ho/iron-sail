@@ -28,7 +28,7 @@ async function main() {
   const KEEY = await TokenFactory.connect(KEEYOwner).deploy(
     25000000,
     0,
-    'IronSail',
+    'Iron Sail',
     'KEEY'
   )
   console.log('KEEY address:', KEEY.address)
@@ -41,8 +41,8 @@ async function main() {
   )
   console.log('Sale contract deployed to:', SaleContract.address)
 
-  // Initialize fund (transfer from admin wallet to sale contract address)
   await KEEY.connect(KEEYOwner).approve(SaleContract.address, 2500)
+  console.log('Approve successful')
   await SaleContract.connect(KEEYOwner).initializeSale(2500)
   console.log('Initialize Sale successful')
 }

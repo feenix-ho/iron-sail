@@ -40,6 +40,8 @@ function App() {
   const [remainingKEEY, setRemainingKEEY] = useState(undefined)
   const [USDTBalance, setUSDTBalance] = useState(0)
 
+  let _pollingInterval
+
   useEffect(() => {
     const setContract = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum)
@@ -76,7 +78,6 @@ function App() {
   }, [isConnected])
 
   useEffect(() => {
-    // Get available KEEY to buy
     const getRemainingKEEY = async () => {
       try {
         let remainingKEEY = await SaleContract.getRemainingKEEYInPool()
@@ -161,16 +162,17 @@ function App() {
 
   const handleFormChanged = (e) => {
     const value = e.target.value
+
     if (!value.includes('.') && Number.parseInt(value) >= 0) {
       if (value > 2500) {
         setAmount(2500)
         setTotalUSDT(2500 * fixedBuyPrice)
-      } else {
+      } else if (value > 0) {
         setAmount(value)
         setTotalUSDT(value * fixedBuyPrice)
       }
     } else {
-      setAmount()
+      setAmount(0)
       setTotalUSDT(0)
     }
   }
@@ -186,6 +188,7 @@ function App() {
         console.log('Start buying...')
         try {
           const response = await SaleContract.buyKEEY(totalUSDT * 100000)
+          console.log(totalUSDT * 100000)
           console.log(response)
         } catch (err) {
           setErrorMessage(err.error.message)
@@ -212,22 +215,18 @@ function App() {
       <div className='gradient-bg-welcome'>
         <NavigationBar
           selectedAddress={defaultAccount[0]}
-          connectWallet={() => connectWallet()}
+          connectWallet={connectWallet}
         />
-        {console.log(KEEYBalance, USDTBalance)}
         <Welcome
           availableSupply={
             remainingKEEY === undefined ? 0 : remainingKEEY.toNumber()
           }
           selectedAddress={defaultAccount[0]}
-          connectWallet={() => connectWallet()}
-          formData={{ size: amount, subtotal: totalUSDT }}
+          connectWallet={connectWallet}
+          formData={{ size: amount, subtotal: totalUSDT / 10 }}
           balance={KEEYBalance}
           handleChange={(e) => handleFormChanged(e)}
-          handleSubmit={() => {
-            handleBuyKEEY()
-            // console.log(USDTBalance)
-          }}
+          handleSubmit={handleBuyKEEY}
           USDTBalance={USDTBalance}
         />
       </div>
