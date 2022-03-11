@@ -16,12 +16,6 @@ const InputForm = ({
   availableSupply,
   formData,
 }) => {
-  // const handleChange = (e) => {
-  //   setSize(e.target.value)
-  //   setSubtotal(e.target.value * 10000)
-  // }
-  // const handleSubmit = (e) => {}
-
   return (
     <div className={styles.formWrapper}>
       <TextField
@@ -103,7 +97,8 @@ const InputForm = ({
       <div className='flex w-full justify-between items-center px-3'>
         <FormHelperText
           style={{
-            color: USDTBalance >= formData.subtotal ? 'dimgrey' : '#770000',
+            color: USDTBalance < formData.subtotal ? '#770000' : 'dimgrey',
+            // color: USDTBalance >= formData.subtotal ? 'dimgrey' : '#770000',
           }}
         >
           Balance:{' '}

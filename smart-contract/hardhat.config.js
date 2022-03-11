@@ -1,15 +1,30 @@
-// https://eth-ropsten.alchemyapi.io/v2/9Ted2zR5eeKtV5jYXIBbqrAm7SRNbSw2
-
 require('@nomiclabs/hardhat-waffle')
+require('dotenv').config()
+const INFURA_API_KEY = 'bab26bec2d824580a15b79d772768d67'
 
-module.exports = {
-  solidity: '0.7.5',
+// Replace this private key with your Ropsten account private key
+// To export your private key from Metamask, open Metamask and
+// go to Account Details > Export Private Key
+// Be aware of NEVER putting real Ether into testing accounts
+const ROPSTEN_PRIVATE_KEY_KEEY = process.env.ROPSTEN_PRIVATE_KEY_KEEY
+const ROPSTEN_PRIVATE_KEY_USDT = process.env.ROPSTEN_PRIVATE_KEY_USDT
+
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
+https: module.exports = {
+  solidity: '0.8.3',
   networks: {
     ropsten: {
-      url: 'https://eth-ropsten.alchemyapi.io/v2/9Ted2zR5eeKtV5jYXIBbqrAm7SRNbSw2',
-      accounts: [
-        '0138ffc15f1fb0a7d6b35aa4560fab79ac5bc28ad37fd2f30f7a73a569ba2b42',
-      ],
+      url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+      accounts: [`${ROPSTEN_PRIVATE_KEY_KEEY}`, `${ROPSTEN_PRIVATE_KEY_USDT}`],
     },
+  },
+  localhost: {
+    url: 'http://127.0.0.1:8545',
+    accounts: [
+      '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+    ],
   },
 }

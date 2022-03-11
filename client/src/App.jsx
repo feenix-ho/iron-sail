@@ -6,12 +6,9 @@ import { ethers } from 'ethers'
 import Footer from './components/footer'
 import NavigationBar from './components/navigation-bar'
 
-import {
-  tokenABI,
-  tokenAddress,
-  tokenSaleABI,
-  tokenSaleAddress,
-} from './utils/constants'
+import TokenArtifact from './utils/Token.json'
+import TokenSaleArtifact from './utils/TokenSale.json'
+import contractAddress from './utils/contract-address.json'
 import Welcome from './components/welcome'
 import Services from './components/services'
 
@@ -19,257 +16,219 @@ const styles = {
   wrapper: `min-h-screen`,
 }
 
-// const HARDHAT_NETWORK_ID = '31337'
-
 const ERROR_CODE_TX_REJECTED_BY_USER = 4001
 
-const { ethereum } = window
-
 function App() {
-  let _pollDataInterval
-  const _provider = new ethers.providers.Web3Provider(ethereum)
-  const _token = new ethers.Contract(
-    tokenAddress,
-    tokenABI,
-    _provider.getSigner(0)
+  const [defaultAccount, setDefaultAccount] = useState('')
+  const [errorMessage, setErrorMessage] = useState(
+    'Please connect to Ropsten Testnet to continue'
   )
+  const [isConnected, setIsConnected] = useState(false)
+  const [connButtonText, setConnButtonText] = useState('Connect Wallet')
 
-  const _tokenSale = new ethers.Contract(
-    tokenSaleAddress,
-    tokenSaleABI,
-    _provider.getSigner(0)
-  )
+  const [USDTContract, setUSDTContract] = useState(undefined)
+  const [KEEYContract, setKEEYContract] = useState(undefined)
+  const [SaleContract, setSaleContract] = useState(undefined)
 
-  const initialState = {
-    tokenData: undefined,
-    tokenSaleData: undefined,
-    selectedAddress: undefined,
-    balance: undefined,
-    USDTBalance: undefined,
-    txBeingSent: undefined,
-    transactionError: undefined,
-    networkError: undefined,
-    formData: {
-      size: undefined,
-      subtotal: undefined,
-    },
-  }
-  const [state, setState] = useState(initialState)
+  const [KEEYBalance, setKEEYBalance] = useState(0)
 
-  const _connectWallet = async () => {
-    const [selectedAddress] = await ethereum.request({
-      method: 'eth_requestAccounts',
-    })
+  const [approveText, setApproveText] = useState('(Need approval)')
 
-    _initialize(selectedAddress)
+  const [amount, setAmount] = useState('0')
+  const [fixedBuyPrice] = useState(100000)
+  const [totalUSDT, setTotalUSDT] = useState(amount * fixedBuyPrice)
+  const [remainingKEEY, setRemainingKEEY] = useState(undefined)
+  const [USDTBalance, setUSDTBalance] = useState(0)
 
-    ethereum.on('accountsChanged', ([newAddress]) => {
-      _stopPollingData()
-      if (newAddress === undefined) {
-        return _resetState()
+  useEffect(() => {
+    const setContract = () => {
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const signer = provider.getSigner()
+      const USDTContractData = new ethers.Contract(
+        contractAddress.USDT,
+        TokenArtifact.abi,
+        signer
+      )
+      setUSDTContract(USDTContractData)
+      const KEEYContractData = new ethers.Contract(
+        contractAddress.KEEY,
+        TokenArtifact.abi,
+        signer
+      )
+      setKEEYContract(KEEYContractData)
+
+      const SaleContractData = new ethers.Contract(
+        contractAddress.SaleContract,
+        TokenSaleArtifact.abi,
+        signer
+      )
+      setSaleContract(SaleContractData)
+    }
+
+    if (window.ethereum === undefined) {
+      setErrorMessage(
+        'Please install MetaMask browser extension to interact with the app'
+      )
+    } else {
+      setIsConnected(true)
+      setContract()
+    }
+  }, [isConnected])
+
+  useEffect(() => {
+    // Get available KEEY to buy
+    const getRemainingKEEY = async () => {
+      try {
+        let remainingKEEY = await SaleContract.getRemainingKEEYInPool()
+        setRemainingKEEY(remainingKEEY)
+      } catch (e) {
+        console.log('ERROR: ', e)
       }
+    }
 
-      _initialize(newAddress)
-    })
+    const updateUSDTBalance = async (account) => {
+      try {
+        let USDTBalanceData = await USDTContract.balanceOf(account)
+        setUSDTBalance((USDTBalanceData / 1000000).toString())
+      } catch (e) {
+        console.log('ERROR: ', e)
+      }
+    }
 
-    ethereum.on('chainChanged', ([networkId]) => {
-      _stopPollingData()
-      _resetState()
-    })
+    const checkUSDTApproval = async () => {
+      try {
+        const allowance = await USDTContract.allowance(
+          defaultAccount[0],
+          SaleContract.address
+        )
+        if (!allowance.isZero()) {
+          setApproveText('')
+        }
+      } catch (e) {
+        console.log('ERROR: ', e)
+      }
+    }
+
+    getRemainingKEEY()
+    updateUSDTBalance(defaultAccount[0])
+    checkUSDTApproval()
+  }, [defaultAccount[0]])
+
+  const handleAccountChanged = (newAccount) => {
+    setDefaultAccount(newAccount)
   }
 
-  const _initialize = async (userAddress) => {
-    setState((prevState) => ({ ...prevState, selectedAddress: userAddress }))
-    _getTokenData()
-    _getTokenSaleData()
-  }
-
-  const _startPollingData = () => {
-    _pollDataInterval = setInterval(() => _updateBalance(), 1000)
-    _updateBalance()
-  }
-
-  const _stopPollingData = () => {
-    clearInterval(_pollDataInterval)
-    _pollDataInterval = undefined
-  }
-
-  const _getTokenData = async () => {
-    const name = await _token.name()
-    const symbol = await _token.symbol()
-
-    setState((prevState) => ({
-      ...prevState,
-      tokenData: { name, symbol },
-    }))
-  }
-
-  const _getTokenSaleData = async () => {
-    const price = await _tokenSale.tokenPrice()
-    const tokenSold = await _tokenSale.tokenSold()
-
-    setState((prevState) => ({
-      ...prevState,
-      tokenSaleData: { price, tokenSold },
-    }))
-  }
-
-  const _updateBalance = async () => {
-    const balance = await _token.balanceOf(state.selectedAddress)
-    const USDTBalance = await _provider.getBalance(state.selectedAddress)
-    setState((prevState) => ({
-      ...prevState,
-      balance: balance,
-      USDTBalance: USDTBalance,
-    }))
-  }
-
-  const _transferTokens = async (to, amount) => {
+  const updateBalance = async (account) => {
     try {
-      _dismissTransactionError()
-
-      const tx = await _token.transfer(to, amount)
-      // setState({ txBeingSent: tx.hash })
-      setState((prevState) => ({ ...prevState, txBeingSent: tx.hash }))
-
-      const receipt = await tx.wait()
-
-      if (receipt.status === 0) {
-        throw new Error('Transaction failed')
-      }
-
-      await _updateBalance()
-    } catch (error) {
-      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
-        return
-      }
-      console.error(error)
-      setState((prevState) => ({ ...prevState, transactionError: error }))
-    } finally {
-      setState((prevState) => ({ ...prevState, txBeingSent: undefined }))
+      let KEEYBalance = await KEEYContract.balanceOf(account)
+      setKEEYBalance(KEEYBalance.toString())
+    } catch (e) {
+      console.log('ERROR: ', e)
     }
-  }
-
-  const _buyTokens = async (buyer, amount) => {
-    try {
-      _dismissTransactionError()
-
-      let num = amount
-        ? ethers.BigNumber.from(amount)
-        : ethers.BigNumber.from(0)
-      num = num * state.tokenSaleData.price
-      num = ethers.BigNumber.from(num.toString())
-
-      const tx = await _tokenSale.buyTokens(amount, {
-        from: buyer,
-        gasLimit: 30000,
-        value: num._hex,
-        // gas: '0x5208',
-      })
-      setState((prevState) => ({ ...prevState, txBeingSent: tx.hash }))
-
-      const receipt = await tx.wait()
-
-      if (receipt.status === 0) {
-        throw new Error('Transaction failed')
-      }
-
-      await _updateBalance()
-    } catch (error) {
-      if (error.code === ERROR_CODE_TX_REJECTED_BY_USER) {
-        return
-      }
-      console.error(error)
-      setState((prevState) => ({ ...prevState, transactionError: error }))
-    } finally {
-      // setState({ txBeingSent: undefined })
-      setState((prevState) => ({ ...prevState, txBeingSent: undefined }))
-    }
-  }
-
-  const _dismissTransactionError = () => {
-    // setState({ transactionError: undefined })
-    setState((prevState) => ({ ...prevState, transactionError: undefined }))
-  }
-
-  const _dismissNetworkError = () => {
-    // setState({ networkError: undefined })
-    setState((prevState) => ({ ...prevState, networkError: undefined }))
-  }
-
-  const _getRpcErrorMessage = (error) => {
-    if (error.data) {
-      return error.data.message
-    }
-
-    return error.message
-  }
-
-  const _resetState = () => {
-    setState(initialState)
-  }
-
-  // const _checkNetwork = () => {
-  //   console.log('hithereimdead', ethereum.networkVersion)
-  //   if (ethereum.networkVersion === HARDHAT_NETWORK_ID) {
-  //     return true
-  //   }
-
-  //   setState((prevState) => ({
-  //     ...prevState,
-  //     networkError: 'Please connect Metamask to Localhost:8545',
-  //   }))
-
-  //   return false
-  // }
-
-  const _handleChange = (e) => {
-    let num = e.target.value
-    num = num ? ethers.BigNumber.from(num) : ethers.BigNumber.from(0)
-    num = num * state.tokenSaleData.price
-
-    setState((prevState) => ({
-      ...prevState,
-      formData: {
-        size: e.target.value,
-        subtotal: num,
-      },
-    }))
   }
 
   useEffect(() => {
-    _stopPollingData()
-    _connectWallet()
-    // _getTokenSaleData()
-    console.log(state.balance)
-  }, [])
-  useEffect(() => {
-    if (state.selectedAddress) _startPollingData()
-  }, [state.selectedAddress])
+    const handleChainChanged = () => {
+      window.location.reload()
+    }
+
+    if (window.ethereum !== undefined) {
+      window.ethereum.on('chainChanged', handleChainChanged)
+      window.ethereum.on('accountsChanged', handleAccountChanged)
+    }
+
+    updateBalance(defaultAccount[0])
+  }, [defaultAccount[0]])
+
+  const connectWallet = () => {
+    if (window.ethereum !== undefined) {
+      window.ethereum
+        .request({ method: 'eth_requestAccounts' })
+        .then((result) => {
+          handleAccountChanged(result)
+          // Should check Ropsten network here, assumption for short
+          setConnButtonText('Wallet Connected')
+          setErrorMessage('')
+          updateBalance(result[0])
+        })
+        .catch((error) => {
+          setErrorMessage(error.message)
+        })
+    } else {
+      console.log('Need to install MetaMask')
+    }
+  }
+
+  const handleFormChanged = (e) => {
+    const value = e.target.value
+    if (!value.includes('.') && Number.parseInt(value) >= 0) {
+      if (value > 2500) {
+        setAmount(2500)
+        setTotalUSDT(2500 * fixedBuyPrice)
+      } else {
+        setAmount(value)
+        setTotalUSDT(value * fixedBuyPrice)
+      }
+    } else {
+      setAmount()
+      setTotalUSDT(0)
+    }
+  }
+
+  const handleBuyKEEY = async () => {
+    console.log(USDTContract.address)
+    console.log(SaleContract.address)
+
+    if (totalUSDT !== 0) {
+      setErrorMessage('')
+      if (approveText === '') {
+        // Start buying
+        console.log('Start buying...')
+        try {
+          const response = await SaleContract.buyKEEY(totalUSDT * 100000)
+          console.log(response)
+        } catch (err) {
+          setErrorMessage(err.error.message)
+        }
+      } else {
+        try {
+          const response = await USDTContract.approve(
+            SaleContract.address,
+            USDTContract.balanceOf(defaultAccount[0])
+          )
+          setApproveText('')
+        } catch (err) {
+          console.log('error: ', err)
+          return
+        }
+      }
+    } else {
+      setErrorMessage('Please enter valid amount of KEEY')
+    }
+  }
 
   return (
     <div className={styles.wrapper}>
       <div className='gradient-bg-welcome'>
         <NavigationBar
-          selectedAddress={state.selectedAddress}
-          connectWallet={() => _connectWallet()}
+          selectedAddress={defaultAccount[0]}
+          connectWallet={() => connectWallet()}
         />
+        {console.log(KEEYBalance, USDTBalance)}
         <Welcome
           availableSupply={
-            2500 -
-            (state.tokenSaleData && state.tokenSaleData.tokenSold
-              ? state.tokenSaleData.tokenSold
-              : 0)
+            remainingKEEY === undefined ? 0 : remainingKEEY.toNumber()
           }
-          selectedAddress={state.selectedAddress}
-          connectWallet={() => _connectWallet()}
-          formData={state.formData}
-          balance={state.balance ? state.balance.toNumber() : 0}
-          handleChange={(e) => _handleChange(e)}
-          handleSubmit={(e) => {
-            _buyTokens(state.selectedAddress, state.formData.size)
+          selectedAddress={defaultAccount[0]}
+          connectWallet={() => connectWallet()}
+          formData={{ size: amount, subtotal: totalUSDT }}
+          balance={KEEYBalance}
+          handleChange={(e) => handleFormChanged(e)}
+          handleSubmit={() => {
+            handleBuyKEEY()
+            // console.log(USDTBalance)
           }}
-          USDTBalance={state.USDTBalance ? state.USDTBalance.toString() : '0'}
+          USDTBalance={USDTBalance}
         />
       </div>
       <Services />
