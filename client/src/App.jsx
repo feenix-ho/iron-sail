@@ -34,9 +34,9 @@ function App() {
 
   const [approveText, setApproveText] = useState('(Need approval)')
 
-  const [amount, setAmount] = useState('0')
+  const [amount, setAmount] = useState(0)
   const [fixedBuyPrice] = useState(100000)
-  const [totalUSDT, setTotalUSDT] = useState(amount * fixedBuyPrice)
+  const [totalUSDT, setTotalUSDT] = useState(0)
   const [remainingKEEY, setRemainingKEEY] = useState(undefined)
   const [USDTBalance, setUSDTBalance] = useState(0)
 
@@ -167,7 +167,7 @@ function App() {
       if (value > 2500) {
         setAmount(2500)
         setTotalUSDT(2500 * fixedBuyPrice)
-      } else if (value > 0) {
+      } else {
         setAmount(value)
         setTotalUSDT(value * fixedBuyPrice)
       }
